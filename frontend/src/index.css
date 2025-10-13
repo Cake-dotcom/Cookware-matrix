@@ -1,0 +1,21 @@
+/* Load Tailwind's base, components, and utility styles.
+  This makes classes like "bg-red-700" and "shadow-xl" work. 
+*/
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Custom Global Styles */
+body {
+  /* Using Inter font as recommended for modern design */
+  font-family: 'Inter', sans-serif; 
+  margin: 0;
+  padding: 0;
+  /* Applying a slight background color for visual separation */
+  background-color: #f7fafc; 
+}
+
+/* Optional: Adding Google Font Import for "Inter" */
+/* You might need to add this to your public/index.html file's <head> section
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+*/
