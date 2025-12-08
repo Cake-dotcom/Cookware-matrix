@@ -20,7 +20,7 @@ const helpSteps = [
     shortDesc: "Begin your cookware journey",
     content: "From the homepage, simply click the \"Compare\" button. This will take you to our main comparison page, where you'll find a wide range of cookware products and brands ready to be explored.",
     tips: ["Quick access from any page", "Registration required"],
-    linkTo: "/"
+    linkTo: "/home"
   },
   {
     id: 2,
