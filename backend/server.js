@@ -1,45 +1,57 @@
 // Import required packages
-const express = require('express');
-const mongoose = require('mongoose');
-const cors = require('cors');
+const express = require("express");
+const mongoose = require("mongoose");
+const cors = require("cors");
+require("dotenv").config();
 
 const app = express();
 const port = 5000;
 
-// Middleware to handle JSON data and enable CORS for all requests
+// Middleware
 app.use(express.json());
 app.use(cors());
 
-// Connect to MongoDB
-mongoose.connect('mongodb://localhost:27017/cookwareDB')
-  .then(() => console.log('Connected to MongoDB!'))
-  .catch(err => console.error('Could not connect to MongoDB...', err));
+// 1️⃣ Connect to MongoDB with deployment-friendly URL
+mongoose
+  .connect(process.env.MONGO_URI || "mongodb://localhost:27017/cookwareDB")
+  .then(() => console.log("Connected to MongoDB!"))
+  .catch((err) => console.error("Could not connect to MongoDB...", err));
 
-// Define the schema for a single cookware item
+/* -------------------------
+     Mongoose Schema + Model
+---------------------------*/
+// 2️⃣ Updated schema with new fields
 const cookwareSchema = new mongoose.Schema({
   title: { type: String, required: true },
   brand: String,
-  price: Number,
+  category: String,
+  releaseYear: Number,   // NEW - for "Release Date" field
   material: String,
   dimensions: String,
   weight: Number,
   heatCompatibility: String,
   durability: String,
+  efficiency: String,    // NEW - for "Energy Efficiency" field
   specialFeatures: String,
+  price: Number,
+  rating: Number,
+  image: String,
+  sourceUrl: String
 });
 
-// Create a model from the schema
-const Cookware = mongoose.model('Cookware', cookwareSchema);
+const Cookware = mongoose.model("Cookware", cookwareSchema);
 
-// ---- API Endpoints ----
+/* -------------------------
+            ROUTES
+---------------------------*/
 
-// Endpoint for the root URL
-app.get('/', (req, res) => {
-    res.send('Welcome to the Cookware Matrix API!');
+// Root test route
+app.get("/", (req, res) => {
+  res.send("Welcome to the Cookware Matrix API!");
 });
 
-// Endpoint to get all cookware items for the "Let's Get Started" page
-app.get('/api/cookware', async (req, res) => {
+// Get all cookware
+app.get("/api/cookware", async (req, res) => {
   try {
     const allCookware = await Cookware.find();
     res.json(allCookware);
@@ -48,12 +60,12 @@ app.get('/api/cookware', async (req, res) => {
   }
 });
 
-// Endpoint to get a single cookware item by its ID for the "Comparison" page
-app.get('/api/cookware/:id', async (req, res) => {
+// Get single cookware by ID
+app.get("/api/cookware/:id", async (req, res) => {
   try {
     const item = await Cookware.findById(req.params.id);
     if (!item) {
-      return res.status(404).json({ message: 'Cookware not found' });
+      return res.status(404).json({ message: "Cookware not found" });
     }
     res.json(item);
   } catch (err) {
@@ -61,41 +73,103 @@ app.get('/api/cookware/:id', async (req, res) => {
   }
 });
 
-// Endpoint to add sample data to your database (run this once)
-app.post('/api/cookware/seed', async (req, res) => {
+// 4️⃣ Compare two cookware items with sorting
+app.get("/api/cookware/compare", async (req, res) => {
   try {
-    const sampleData = [
-      {
-        title: "Prestige Cooker",
-        brand: "Prestige",
-        price: 1500,
-        material: "Stainless Steel",
-        dimensions: "5 Litre",
-        weight: 2.5, // Changed to a number
-        heatCompatibility: "Gas, Electric",
-        durability: "High",
-        specialFeatures: "Ergonomic Handle"
-      },
-      {
-        title: "Pigeon Cooker",
-        brand: "Pigeon",
-        price: 1200,
-        material: "Aluminium",
-        dimensions: "5 Litre",
-        weight: 2.2, // Changed to a number
-        heatCompatibility: "Gas, Induction",
-        durability: "Medium",
-        specialFeatures: "Safety Valve"
-      }
-    ];
-    await Cookware.insertMany(sampleData);
-    res.status(201).json({ message: 'Sample data seeded successfully' });
+    const { brand1, brand2, category } = req.query;
+
+    if (!brand1 || !brand2 || !category) {
+      return res.status(400).json({
+        message: "brand1, brand2, and category are required query parameters",
+      });
+    }
+
+    const results = await Cookware.find({
+      category,
+      brand: { $in: [brand1, brand2] },
+    }).sort({ brand: 1 });
+
+    if (results.length < 2) {
+      return res
+        .status(404)
+        .json({ message: "Not enough products found for comparison" });
+    }
+
+    res.json(results);
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
 });
 
-// Start the server
+// 5️⃣ Search cookware by title
+app.get("/api/cookware/search", async (req, res) => {
+  try {
+    const { q } = req.query;
+    
+    if (!q) {
+      return res.status(400).json({ message: "Search query 'q' is required" });
+    }
+    
+    const results = await Cookware.find({
+      title: { $regex: q, $options: "i" }
+    });
+    
+    res.json(results);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+// 3️⃣ Seed sample database with updated data
+app.post("/api/cookware/seed", async (req, res) => {
+  try {
+    const sampleData = [
+      {
+        title: "Prestige Cooker",
+        brand: "Prestige",
+        category: "Pressure Cooker",
+        price: 1500,
+        releaseYear: 2023,
+        efficiency: "A+",
+        material: "Stainless Steel",
+        dimensions: "5 Litre",
+        weight: 2.5,
+        heatCompatibility: "Gas, Electric",
+        durability: "High",
+        specialFeatures: "Ergonomic Handle",
+        rating: 4.5,
+        image: "https://via.placeholder.com/150",
+        sourceUrl: "https://example.com/prestige",
+      },
+      {
+        title: "Pigeon Cooker",
+        brand: "Pigeon",
+        category: "Pressure Cooker",
+        price: 1200,
+        releaseYear: 2022,
+        efficiency: "A",
+        material: "Aluminium",
+        dimensions: "5 Litre",
+        weight: 2.2,
+        heatCompatibility: "Gas, Induction",
+        durability: "Medium",
+        specialFeatures: "Safety Valve",
+        rating: 4.2,
+        image: "https://via.placeholder.com/150",
+        sourceUrl: "https://example.com/pigeon",
+      },
+    ];
+
+    await Cookware.deleteMany(); // makes reseeding easy
+    await Cookware.insertMany(sampleData);
+
+    res.status(201).json({ message: "Sample data seeded successfully" });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+// Start server
 app.listen(port, () => {
-  console.log(`Server is running on http://localhost:${port}`);
+  console.log(`🚀 Server is running on http://localhost:${port}`);
 });

@@ -25,6 +25,47 @@ const productBrands = {
   "Tawa": ["Prestige", "Pigeon", "Hawkins", "Cello", "Wonderchef"]
 };
 
+// Popular comparisons data
+const popularComparisons = [
+  { brand1: "Prestige", brand2: "Pigeon", category: "Pressure Cooker" },
+  { brand1: "Hawkins", brand2: "Butterfly", category: "Pressure Cooker" },
+  { brand1: "Prestige", brand2: "Meyer", category: "Frying Pan" },
+  { brand1: "Pigeon", brand2: "Cello", category: "Frying Pan" },
+  { brand1: "Vinod", brand2: "Butterfly", category: "Sauce Pan" },
+  { brand1: "Prestige", brand2: "Hawkins", category: "Wok" },
+  { brand1: "Pigeon", brand2: "Vinod", category: "Kadhai" },
+  { brand1: "Prestige", brand2: "Cello", category: "Tawa" },
+];
+
+// Reusable Comparison Card Component
+function ComparisonCard({ brand1, brand2, category, onClick, delay }) {
+  return (
+    <div 
+      onClick={onClick}
+      className="bg-gradient-to-r from-slate-700 to-slate-800 rounded-2xl px-6 py-4 flex items-center justify-between shadow-lg cursor-pointer hover:from-slate-600 hover:to-slate-700 hover:-translate-y-1 hover:shadow-xl transition-all duration-300 animate-slideUpStagger"
+      style={{ animationDelay: `${delay}ms` }}
+    >
+      <div className="flex items-center gap-2">
+        <img src={redCooker} alt={`${brand1} ${category}`} className="w-10 h-10 rounded-lg" />
+        <div className="text-white">
+          <p className="font-semibold text-sm">{brand1}</p>
+          <p className="text-xs text-gray-300">{category}</p>
+        </div>
+      </div>
+      <div className="bg-emerald-600 text-white w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs shadow-md">
+        ⚡
+      </div>
+      <div className="flex items-center gap-2">
+        <img src={blackCooker} alt={`${brand2} ${category}`} className="w-10 h-10 rounded-lg" />
+        <div className="text-white">
+          <p className="font-semibold text-sm">{brand2}</p>
+          <p className="text-xs text-gray-300">{category}</p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function Compare() {
   const navigate = useNavigate();
   
@@ -35,11 +76,11 @@ export default function Compare() {
   const [showCategoryDropdown, setShowCategoryDropdown] = useState(false);
   const [showBrand1Dropdown, setShowBrand1Dropdown] = useState(false);
   const [showBrand2Dropdown, setShowBrand2Dropdown] = useState(false);
+  const [isComparing, setIsComparing] = useState(false);
 
   const handleCategorySelect = (category) => {
     setSelectedCategory(category);
     setShowCategoryDropdown(false);
-    // Reset brand selections when category changes
     setSelectedBrand1("");
     setSelectedBrand2("");
   };
@@ -54,55 +95,120 @@ export default function Compare() {
     setShowBrand2Dropdown(false);
   };
 
+  const handleSwapBrands = () => {
+    const temp = selectedBrand1;
+    setSelectedBrand1(selectedBrand2);
+    setSelectedBrand2(temp);
+  };
+
+  const handleCompare = () => {
+    if (selectedCategory && selectedBrand1 && selectedBrand2) {
+      setIsComparing(true);
+      setTimeout(() => {
+        navigate('/comparison-result', {
+          state: {
+            category: selectedCategory,
+            brand1: selectedBrand1,
+            brand2: selectedBrand2
+          }
+        });
+      }, 500);
+    } else {
+      alert('Please select a product category and both brands to compare!');
+    }
+  };
+
+  const handlePopularComparisonClick = (comparison) => {
+    navigate('/comparison-result', {
+      state: {
+        category: comparison.category,
+        brand1: comparison.brand1,
+        brand2: comparison.brand2
+      }
+    });
+  };
+
   const availableBrands = selectedCategory ? productBrands[selectedCategory] : [];
+  const currentStep = !selectedCategory ? 1 : !selectedBrand1 ? 2 : !selectedBrand2 ? 3 : 4;
 
   return (
-    <div className="min-h-screen bg-[#7B2E3A] flex flex-col items-center justify-center p-8">
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex flex-col items-center justify-center p-4 relative overflow-hidden">
+      {/* Animated background blobs */}
+      <div className="absolute top-20 left-20 w-96 h-96 bg-emerald-500/10 rounded-full blur-3xl animate-pulse"></div>
+      <div className="absolute bottom-20 right-40 w-80 h-80 bg-teal-500/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }}></div>
+
       {/* Main Container */}
-      <div className="w-full max-w-[900px] bg-[#E8D4A0] rounded-[40px] shadow-2xl overflow-hidden pt-6 px-6 pb-6">
+      <div className="w-full max-w-[1400px] bg-white/10 backdrop-blur-xl rounded-[40px] shadow-2xl overflow-hidden pt-6 px-6 pb-6 border border-white/20 animate-fadeInUp">
         {/* Header Section with rounded top */}
-        <div className="w-full bg-[#7B2E3A] py-6 px-12 flex items-center gap-6 rounded-t-[30px]">
-          {/* Logo */}
-          <img src={logo} alt="Cookware Matrix logo" className="w-12 h-12" />
-          
-          {/* Title */}
-          <h1 className="text-white text-3xl font-bold flex-1 text-center">Discover Your Perfect Match</h1>
+        <div className="w-full bg-gradient-to-r from-slate-700/50 to-slate-800/50 backdrop-blur-sm py-8 px-12 flex items-center justify-between rounded-t-[30px] border-b border-slate-600/30">
+          {/* Logo and Title */}
+          <div className="flex items-center gap-6">
+            <img src={logo} alt="Cookware Matrix logo" className="w-16 h-16 drop-shadow-lg" />
+            <h1 className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-teal-400 text-4xl font-bold">Discover Your Perfect Match</h1>
+          </div>
           
           {/* Navigation */}
-          <nav className="flex gap-6 text-white text-sm">
-            <Link to="/" className="hover:underline">Home</Link>
-            <Link to="/about" className="hover:underline">About</Link>
-            <Link to="/help" className="hover:underline">Help</Link>
+          <nav className="flex gap-8 text-slate-300 text-base font-medium">
+            <Link to="/home" className="hover:text-emerald-400 transition-all hover:drop-shadow-[0_0_8px_rgba(52,211,153,0.5)]">Home</Link>
+            <Link to="/about" className="hover:text-emerald-400 transition-all hover:drop-shadow-[0_0_8px_rgba(52,211,153,0.5)]">About</Link>
+            <Link to="/help" className="hover:text-emerald-400 transition-all hover:drop-shadow-[0_0_8px_rgba(52,211,153,0.5)]">Help</Link>
           </nav>
         </div>
 
+        {/* Progress Steps */}
+        <div className="flex justify-center gap-4 py-6 px-12">
+          {[1, 2, 3, 4].map((step) => (
+            <div key={step} className="flex items-center gap-2">
+              <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold transition-all ${
+                currentStep >= step 
+                  ? 'bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-lg' 
+                  : 'bg-slate-600/50 text-slate-400'
+              }`}>
+                {step}
+              </div>
+              {step < 4 && (
+                <div className={`w-16 h-1 rounded transition-all ${
+                  currentStep > step ? 'bg-gradient-to-r from-emerald-500 to-teal-500' : 'bg-slate-600/50'
+                }`}></div>
+              )}
+            </div>
+          ))}
+        </div>
+
         {/* Main Content */}
-        <div className="p-8">
+        <div className="p-12">
           {/* Compare Cookware Section */}
-          <div className="bg-[#EAC988] rounded-3xl p-10 mb-6">
-            <h2 className="text-white text-2xl font-bold mb-6">Compare Cookware</h2>
+          <div className="bg-gradient-to-br from-slate-700/30 to-slate-800/30 backdrop-blur-sm rounded-3xl p-12 mb-8 border border-slate-600/30 shadow-lg">
+            <div className="flex items-center gap-3 mb-8">
+              <span className="text-4xl">🍳</span>
+              <h2 className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-teal-400 text-4xl font-bold tracking-tight">Compare Cookware</h2>
+            </div>
             
             {/* Select The Product */}
-            <div className="mb-6">
-              <h3 className="text-white text-base font-semibold mb-3">Select The Product</h3>
+            <div className="mb-8">
+              <div className="flex items-center gap-2 mb-4">
+                <span className="text-xl">🔍</span>
+                <h3 className="text-slate-200 text-lg font-semibold">Step 1: Select The Product</h3>
+              </div>
               <div className="flex justify-center relative">
                 <button 
                   onClick={() => setShowCategoryDropdown(!showCategoryDropdown)}
-                  className="bg-[#8B3545] text-white px-16 py-2.5 rounded-full text-sm font-medium shadow-lg hover:bg-[#6d2a36] transition-colors relative"
+                  className="bg-gradient-to-r from-emerald-500 to-teal-500 text-white px-20 py-4 rounded-full text-base font-semibold shadow-xl hover:from-emerald-400 hover:to-teal-400 transition-all hover:scale-105 active:scale-95 relative"
                 >
-                  {selectedCategory || "Select A Product"}
+                  {selectedCategory || "Select A Product Category"}
                 </button>
                 
                 {/* Category Dropdown */}
                 {showCategoryDropdown && (
-                  <div className="absolute top-full mt-2 bg-white rounded-xl shadow-xl z-50 w-64 max-h-60 overflow-y-auto">
+                  <div className="absolute top-full mt-2 bg-white rounded-xl shadow-2xl z-50 w-72 max-h-80 overflow-y-auto border border-gray-200 animate-dropdownOpen">
                     {productCategories.map((category, index) => (
                       <button
                         key={index}
                         onClick={() => handleCategorySelect(category)}
-                        className="w-full text-left px-6 py-3 hover:bg-[#EAC988] transition-colors text-[#5C2832] text-sm border-b border-gray-200 last:border-b-0"
+                        className="w-full text-left px-6 py-4 hover:bg-emerald-50 hover:pl-8 transition-all text-slate-700 text-base border-b border-gray-100 last:border-b-0 flex items-center gap-3 group"
                       >
-                        {category}
+                        <span className="text-2xl opacity-70 group-hover:opacity-100 transition-opacity">🍴</span>
+                        <span>{category}</span>
                       </button>
                     ))}
                   </div>
@@ -112,28 +218,31 @@ export default function Compare() {
 
             {/* Select Brands */}
             <div>
-              <h3 className="text-white text-base font-semibold mb-3">Select Brands</h3>
-              <div className="flex flex-col items-center gap-4">
-                {/* Two product selectors with VS */}
-                <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2 mb-4">
+                <span className="text-xl">🏪</span>
+                <h3 className="text-slate-200 text-lg font-semibold">Step 2 & 3: Select Brands to Compare</h3>
+              </div>
+              <div className="flex flex-col items-center gap-6">
+                {/* Two product selectors with VS and Swap */}
+                <div className="flex items-center gap-4">
                   {/* Brand 1 Selector */}
                   <div className="relative">
                     <button 
                       onClick={() => selectedCategory && setShowBrand1Dropdown(!showBrand1Dropdown)}
                       disabled={!selectedCategory}
-                      className={`${!selectedCategory ? 'bg-gray-400 cursor-not-allowed' : 'bg-[#8B3545] hover:bg-[#6d2a36]'} text-white px-12 py-2.5 rounded-full text-sm font-medium shadow-lg transition-colors`}
+                      className={`${!selectedCategory ? 'bg-gray-500/50 cursor-not-allowed' : 'bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 hover:scale-105 active:scale-95'} text-white px-16 py-4 rounded-full text-base font-semibold shadow-xl transition-all`}
                     >
-                      {selectedBrand1 || "Select A Product"}
+                      {selectedBrand1 || "Brand 1"}
                     </button>
                     
                     {/* Brand 1 Dropdown */}
                     {showBrand1Dropdown && selectedCategory && (
-                      <div className="absolute top-full mt-2 bg-white rounded-xl shadow-xl z-50 w-64 max-h-60 overflow-y-auto">
+                      <div className="absolute top-full mt-2 bg-white rounded-xl shadow-2xl z-50 w-72 max-h-80 overflow-y-auto border border-gray-200 animate-dropdownOpen">
                         {availableBrands.map((brand, index) => (
                           <button
                             key={index}
                             onClick={() => handleBrand1Select(brand)}
-                            className="w-full text-left px-6 py-3 hover:bg-[#EAC988] transition-colors text-[#5C2832] text-sm border-b border-gray-200 last:border-b-0"
+                            className="w-full text-left px-6 py-4 hover:bg-emerald-50 hover:pl-8 transition-all text-slate-700 text-base border-b border-gray-100 last:border-b-0"
                           >
                             {brand}
                           </button>
@@ -142,8 +251,20 @@ export default function Compare() {
                     )}
                   </div>
 
-                  <div className="bg-black text-white w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm">
-                    VS
+                  {/* VS Badge with Swap Button */}
+                  <div className="flex flex-col items-center gap-2">
+                    <div className={`${selectedCategory && selectedBrand1 && selectedBrand2 ? 'bg-gradient-to-r from-emerald-500 to-teal-500' : 'bg-slate-600/50'} text-white w-12 h-12 rounded-full flex items-center justify-center font-bold text-base shadow-lg transition-all`}>
+                      VS
+                    </div>
+                    {selectedBrand1 && selectedBrand2 && (
+                      <button
+                        onClick={handleSwapBrands}
+                        className="text-emerald-400 text-sm hover:text-emerald-300 transition-all flex items-center gap-1"
+                        title="Swap brands"
+                      >
+                        <span>🔄</span> Swap
+                      </button>
+                    )}
                   </div>
 
                   {/* Brand 2 Selector */}
@@ -151,19 +272,19 @@ export default function Compare() {
                     <button 
                       onClick={() => selectedCategory && setShowBrand2Dropdown(!showBrand2Dropdown)}
                       disabled={!selectedCategory}
-                      className={`${!selectedCategory ? 'bg-gray-400 cursor-not-allowed' : 'bg-[#8B3545] hover:bg-[#6d2a36]'} text-white px-12 py-2.5 rounded-full text-sm font-medium shadow-lg transition-colors`}
+                      className={`${!selectedCategory ? 'bg-gray-500/50 cursor-not-allowed' : 'bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 hover:scale-105 active:scale-95'} text-white px-16 py-4 rounded-full text-base font-semibold shadow-xl transition-all`}
                     >
-                      {selectedBrand2 || "Select A Product"}
+                      {selectedBrand2 || "Brand 2"}
                     </button>
                     
                     {/* Brand 2 Dropdown */}
                     {showBrand2Dropdown && selectedCategory && (
-                      <div className="absolute top-full mt-2 bg-white rounded-xl shadow-xl z-50 w-64 max-h-60 overflow-y-auto">
+                      <div className="absolute top-full mt-2 bg-white rounded-xl shadow-2xl z-50 w-72 max-h-80 overflow-y-auto border border-gray-200 animate-dropdownOpen">
                         {availableBrands.map((brand, index) => (
                           <button
                             key={index}
                             onClick={() => handleBrand2Select(brand)}
-                            className="w-full text-left px-6 py-3 hover:bg-[#EAC988] transition-colors text-[#5C2832] text-sm border-b border-gray-200 last:border-b-0"
+                            className="w-full text-left px-6 py-4 hover:bg-emerald-50 hover:pl-8 transition-all text-slate-700 text-base border-b border-gray-100 last:border-b-0"
                           >
                             {brand}
                           </button>
@@ -175,204 +296,96 @@ export default function Compare() {
 
                 {/* Compare Now Button */}
                 <button 
-                  onClick={() => {
-                    if (selectedCategory && selectedBrand1 && selectedBrand2) {
-                      navigate('/comparison-result', {
-                        state: {
-                          category: selectedCategory,
-                          brand1: selectedBrand1,
-                          brand2: selectedBrand2
-                        }
-                      });
-                    } else {
-                      alert('Please select a product category and both brands to compare!');
-                    }
-                  }}
-                  className="bg-[#5C2832] text-white px-16 py-2.5 rounded-full text-sm font-medium shadow-lg hover:bg-[#4a1f28] transition-colors"
+                  onClick={handleCompare}
+                  disabled={isComparing}
+                  className="bg-gradient-to-r from-slate-600 to-slate-700 text-white px-20 py-4 rounded-full text-lg font-semibold shadow-xl hover:from-slate-500 hover:to-slate-600 transition-all hover:scale-105 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-3"
                 >
-                  Compare Now
+                  {isComparing ? (
+                    <>
+                      <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                      Comparing...
+                    </>
+                  ) : (
+                    <>
+                      Compare Now
+                      <span>⚖️</span>
+                    </>
+                  )}
                 </button>
               </div>
             </div>
           </div>
 
           {/* Popular Comparisons Section */}
-          <div className="bg-[#EAC988] rounded-3xl p-10">
-            <h2 className="text-white text-2xl font-bold mb-6">Popular Comparisons:</h2>
+          <div className="bg-gradient-to-br from-slate-700/30 to-slate-800/30 backdrop-blur-sm rounded-3xl p-12 border border-slate-600/30 shadow-lg">
+            <div className="flex items-center gap-3 mb-8">
+              <span className="text-3xl">🔥</span>
+              <h2 className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-teal-400 text-3xl font-bold tracking-tight">Popular Comparisons</h2>
+            </div>
             
-            {/* Grid of comparisons - 2 columns, 4 rows */}
-            <div className="grid grid-cols-2 gap-4">
-              {/* Comparison Card 1 */}
-              <div className="bg-[#A05663] rounded-2xl px-6 py-4 flex items-center justify-between shadow-lg cursor-pointer hover:bg-[#8B4A56] transition-colors">
-                <div className="flex items-center gap-2">
-                  <img src={redCooker} alt="Prestige cooker" className="w-10 h-10 rounded-lg" />
-                  <div className="text-white">
-                    <p className="font-semibold text-sm">Prestige</p>
-                    <p className="text-xs">cooker</p>
-                  </div>
-                </div>
-                <div className="bg-black text-white w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs">
-                  VS
-                </div>
-                <div className="flex items-center gap-2">
-                  <img src={blackCooker} alt="Pigeon cooker" className="w-10 h-10 rounded-lg" />
-                  <div className="text-white">
-                    <p className="font-semibold text-sm">Pigeon</p>
-                    <p className="text-xs">cooker</p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Comparison Card 2 */}
-              <div className="bg-[#A05663] rounded-2xl px-6 py-4 flex items-center justify-between shadow-lg cursor-pointer hover:bg-[#8B4A56] transition-colors">
-                <div className="flex items-center gap-2">
-                  <img src={redCooker} alt="Prestige cooker" className="w-10 h-10 rounded-lg" />
-                  <div className="text-white">
-                    <p className="font-semibold text-sm">Prestige</p>
-                    <p className="text-xs">cooker</p>
-                  </div>
-                </div>
-                <div className="bg-black text-white w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs">
-                  VS
-                </div>
-                <div className="flex items-center gap-2">
-                  <img src={blackCooker} alt="Pigeon cooker" className="w-10 h-10 rounded-lg" />
-                  <div className="text-white">
-                    <p className="font-semibold text-sm">Pigeon</p>
-                    <p className="text-xs">cooker</p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Comparison Card 3 */}
-              <div className="bg-[#A05663] rounded-2xl px-6 py-4 flex items-center justify-between shadow-lg cursor-pointer hover:bg-[#8B4A56] transition-colors">
-                <div className="flex items-center gap-2">
-                  <img src={redCooker} alt="Prestige cooker" className="w-10 h-10 rounded-lg" />
-                  <div className="text-white">
-                    <p className="font-semibold text-sm">Prestige</p>
-                    <p className="text-xs">cooker</p>
-                  </div>
-                </div>
-                <div className="bg-black text-white w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs">
-                  VS
-                </div>
-                <div className="flex items-center gap-2">
-                  <img src={blackCooker} alt="Pigeon cooker" className="w-10 h-10 rounded-lg" />
-                  <div className="text-white">
-                    <p className="font-semibold text-sm">Pigeon</p>
-                    <p className="text-xs">cooker</p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Comparison Card 4 */}
-              <div className="bg-[#A05663] rounded-2xl px-6 py-4 flex items-center justify-between shadow-lg cursor-pointer hover:bg-[#8B4A56] transition-colors">
-                <div className="flex items-center gap-2">
-                  <img src={redCooker} alt="Prestige cooker" className="w-10 h-10 rounded-lg" />
-                  <div className="text-white">
-                    <p className="font-semibold text-sm">Prestige</p>
-                    <p className="text-xs">cooker</p>
-                  </div>
-                </div>
-                <div className="bg-black text-white w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs">
-                  VS
-                </div>
-                <div className="flex items-center gap-2">
-                  <img src={blackCooker} alt="Pigeon cooker" className="w-10 h-10 rounded-lg" />
-                  <div className="text-white">
-                    <p className="font-semibold text-sm">Pigeon</p>
-                    <p className="text-xs">cooker</p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Comparison Card 5 */}
-              <div className="bg-[#A05663] rounded-2xl px-6 py-4 flex items-center justify-between shadow-lg cursor-pointer hover:bg-[#8B4A56] transition-colors">
-                <div className="flex items-center gap-2">
-                  <img src={redCooker} alt="Prestige cooker" className="w-10 h-10 rounded-lg" />
-                  <div className="text-white">
-                    <p className="font-semibold text-sm">Prestige</p>
-                    <p className="text-xs">cooker</p>
-                  </div>
-                </div>
-                <div className="bg-black text-white w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs">
-                  VS
-                </div>
-                <div className="flex items-center gap-2">
-                  <img src={blackCooker} alt="Pigeon cooker" className="w-10 h-10 rounded-lg" />
-                  <div className="text-white">
-                    <p className="font-semibold text-sm">Pigeon</p>
-                    <p className="text-xs">cooker</p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Comparison Card 6 */}
-              <div className="bg-[#A05663] rounded-2xl px-6 py-4 flex items-center justify-between shadow-lg cursor-pointer hover:bg-[#8B4A56] transition-colors">
-                <div className="flex items-center gap-2">
-                  <img src={redCooker} alt="Prestige cooker" className="w-10 h-10 rounded-lg" />
-                  <div className="text-white">
-                    <p className="font-semibold text-sm">Prestige</p>
-                    <p className="text-xs">cooker</p>
-                  </div>
-                </div>
-                <div className="bg-black text-white w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs">
-                  VS
-                </div>
-                <div className="flex items-center gap-2">
-                  <img src={blackCooker} alt="Pigeon cooker" className="w-10 h-10 rounded-lg" />
-                  <div className="text-white">
-                    <p className="font-semibold text-sm">Pigeon</p>
-                    <p className="text-xs">cooker</p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Comparison Card 7 */}
-              <div className="bg-[#A05663] rounded-2xl px-6 py-4 flex items-center justify-between shadow-lg cursor-pointer hover:bg-[#8B4A56] transition-colors">
-                <div className="flex items-center gap-2">
-                  <img src={redCooker} alt="Prestige cooker" className="w-10 h-10 rounded-lg" />
-                  <div className="text-white">
-                    <p className="font-semibold text-sm">Prestige</p>
-                    <p className="text-xs">cooker</p>
-                  </div>
-                </div>
-                <div className="bg-black text-white w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs">
-                  VS
-                </div>
-                <div className="flex items-center gap-2">
-                  <img src={blackCooker} alt="Pigeon cooker" className="w-10 h-10 rounded-lg" />
-                  <div className="text-white">
-                    <p className="font-semibold text-sm">Pigeon</p>
-                    <p className="text-xs">cooker</p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Comparison Card 8 */}
-              <div className="bg-[#A05663] rounded-2xl px-6 py-4 flex items-center justify-between shadow-lg cursor-pointer hover:bg-[#8B4A56] transition-colors">
-                <div className="flex items-center gap-2">
-                  <img src={redCooker} alt="Prestige cooker" className="w-10 h-10 rounded-lg" />
-                  <div className="text-white">
-                    <p className="font-semibold text-sm">Prestige</p>
-                    <p className="text-xs">cooker</p>
-                  </div>
-                </div>
-                <div className="bg-black text-white w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs">
-                  VS
-                </div>
-                <div className="flex items-center gap-2">
-                  <img src={blackCooker} alt="Pigeon cooker" className="w-10 h-10 rounded-lg" />
-                  <div className="text-white">
-                    <p className="font-semibold text-sm">Pigeon</p>
-                    <p className="text-xs">cooker</p>
-                  </div>
-                </div>
-              </div>
+            {/* Grid of comparisons - 2 columns, responsive */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {popularComparisons.map((comparison, index) => (
+                <ComparisonCard
+                  key={index}
+                  brand1={comparison.brand1}
+                  brand2={comparison.brand2}
+                  category={comparison.category}
+                  onClick={() => handlePopularComparisonClick(comparison)}
+                  delay={index * 100}
+                />
+              ))}
             </div>
           </div>
         </div>
       </div>
+
+      <style>{`
+        @keyframes fadeInUp {
+          from {
+            opacity: 0;
+            transform: translateY(30px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+
+        @keyframes dropdownOpen {
+          from {
+            opacity: 0;
+            transform: scale(0.95) translateY(-10px);
+          }
+          to {
+            opacity: 1;
+            transform: scale(1) translateY(0);
+          }
+        }
+
+        @keyframes slideUpStagger {
+          from {
+            opacity: 0;
+            transform: translateY(20px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+
+        .animate-fadeInUp {
+          animation: fadeInUp 0.8s ease-out;
+        }
+
+        .animate-dropdownOpen {
+          animation: dropdownOpen 0.2s ease-out;
+        }
+
+        .animate-slideUpStagger {
+          animation: slideUpStagger 0.6s ease-out both;
+        }
+      `}</style>
     </div>
   );
 }
