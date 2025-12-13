@@ -1,49 +1,32 @@
-const dotenv = require("dotenv").config();
-const cron = require("node-cron");
+// backend/run-scrapers.js
+require("dotenv").config();
 const mongoose = require("mongoose");
-const scrapePrestige = require("./scrapers/prestige.js");
-const scrapeHawkins = require("./scrapers/hawkins.js"); // ✅ Already here!
+const connectDB = require("./config/db");
 
-mongoose.connect(process.env.MONGO_URI || "mongodb://localhost:27017/cookwareDB")
-  .then(() => console.log("✅ DB Connected"))
-  .catch((err) => console.log(err));
+const scrapePrestige = require("./scrapers/prestige");
+const scrapeHawkinsPdf = require("./scrapers/hawkins_pdf");
 
-async function runScraping() {
-  console.log("\n🚀 Running full scrape...\n");
-  
+(async () => {
+  console.log("\nRunning full scrape...\n");
+
   try {
-    // 1) Prestige (all categories you already set up)
-    await scrapePrestige(); // ✅ Already running!
-    
-    // 2) Hawkins (Deep Fry Pan + Dosa Tawa for now)
-    await scrapeHawkins(); // ✅ Already running!
-    
-    console.log("📌 Scrape finished.\n");
+    console.log("Connecting to MongoDB...");
+    await connectDB();
+
+    console.log("\nSTARTING PRESTIGE SCRAPER...\n");
+    await scrapePrestige();
+
+    console.log("\nSTARTING HAWKINS PDF SCRAPER...\n");
+    await scrapeHawkinsPdf();
+
+    console.log("\n------------------------------------------------------");
+    console.log("SCRAPE COMPLETE!");
+    console.log("------------------------------------------------------\n");
+
   } catch (err) {
-    console.error("❌ Scraper error:", err.message);
+    console.error("SCRAPER ERROR:", err);
+  } finally {
+    await mongoose.connection.close();
+    console.log("MongoDB connection closed.\n");
   }
-}
-
-// Run once immediately
-runScraping();
-
-// Schedule every Sunday at 2 AM
-cron.schedule("0 2 * * SUN", () => {
-  console.log("\n⏳ Scheduled scrape triggered...");
-  runScraping();
-});
-
-// Graceful shutdown
-process.on("SIGINT", async () => {
-  console.log("\n🛑 Shutting down gracefully...");
-  await mongoose.disconnect();
-  console.log("✅ DB Disconnected");
-  process.exit(0);
-});
-
-process.on("SIGTERM", async () => {
-  console.log("\n🛑 Shutting down gracefully...");
-  await mongoose.disconnect();
-  console.log("✅ DB Disconnected");
-  process.exit(0);
-});
+})();
