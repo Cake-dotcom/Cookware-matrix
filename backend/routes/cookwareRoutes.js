@@ -134,6 +134,51 @@ router.get("/trending", async (req, res) => {
 });
 
 // --------------------------------------------------
+// RECOMMENDED COMPARISONS (simple MVP)
+// /api/cookware/recommended
+// --------------------------------------------------
+router.get("/recommended", async (req, res) => {
+  try {
+    const products = await Cookware.find({
+      image: { $ne: "" },
+      price: { $ne: null },
+      category: { $in: ALLOWED_CATEGORIES }
+    });
+
+    // Group by category
+    const byCategory = {};
+    products.forEach(p => {
+      if (!byCategory[p.category]) byCategory[p.category] = [];
+      byCategory[p.category].push(p);
+    });
+
+    const pairs = [];
+
+    Object.values(byCategory).forEach(list => {
+      // group by brand
+      const byBrand = {};
+      list.forEach(p => {
+        if (!byBrand[p.brand]) byBrand[p.brand] = [];
+        byBrand[p.brand].push(p);
+      });
+
+      const brands = Object.keys(byBrand);
+      if (brands.length >= 2) {
+        pairs.push({
+          category: list[0].category,
+          product1: byBrand[brands[0]][0],
+          product2: byBrand[brands[1]][0]
+        });
+      }
+    });
+
+    res.json(pairs.slice(0, 6));
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// --------------------------------------------------
 // CREATE/INSERT NEW PRODUCT (with category validation)
 // POST /api/cookware
 // --------------------------------------------------

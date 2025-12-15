@@ -3,103 +3,61 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import logo from "./Assets/logo.png";
 import { formatPrice, getImage } from "./utils/formatters";
 
-// Random value generators for missing data
-const randomRating = () => (Math.random() * 2 + 3).toFixed(1); // 3.0 – 5.0
-const randomYear = () => Math.floor(Math.random() * 3) + 2022; // 2022–2024
-const randomWeight = () => `${(Math.random() * 1.5 + 1).toFixed(1)} kg`;
-const randomText = (options) =>
-  options[Math.floor(Math.random() * options.length)];
-
-// Comparison data structure (fallback)
+// Comparison data structure
 const comparisonData = [
   { 
     label: "Release Date", 
-    brand1: null, 
-    brand2: null,
+    field: "releaseYear",
     type: "year",
-    higherIsBetter: true,
-    random: "year"
+    higherIsBetter: true
   },
   { 
     label: "Material", 
-    brand1: "Stainless Steel", 
-    brand2: "Aluminum",
-    type: "text",
-    brand1Better: true
+    field: "material",
+    type: "text"
   },
   { 
     label: "Dimensions", 
-    brand1: "25 x 25 x 15 cm", 
-    brand2: "24 x 24 x 14 cm",
-    type: "text",
-    brand1Better: true
+    field: "dimensions",
+    type: "text"
   },
   { 
     label: "Weight", 
-    brand1: null, 
-    brand2: null,
+    field: "weight",
     type: "weight",
-    higherIsBetter: false,
-    random: "weight"
+    higherIsBetter: false
   },
   { 
-    label: "Heat Conductivity", 
-    brand1: "Excellent", 
-    brand2: "Very Good",
-    type: "rating",
-    brand1Better: true
-  },
-  { 
-    label: "Heat Retention", 
-    brand1: "High", 
-    brand2: "Medium",
-    type: "rating",
-    brand1Better: true
-  },
-  { 
-    label: "Stovetop/Oven compatibility", 
-    brand1: "Gas, Induction, Oven", 
-    brand2: "Gas, Induction",
-    type: "text",
-    brand1Better: true
+    label: "Heat Compatibility", 
+    field: "heatCompatibility",
+    type: "text"
   },
   { 
     label: "Durability/Longevity", 
-    brand1: "10+ years", 
-    brand2: "5-7 years",
-    type: "text",
-    brand1Better: true
+    field: "durability",
+    type: "text"
   },
   { 
     label: "Energy Efficiency", 
-    brand1: "A+", 
-    brand2: "A",
-    type: "grade",
-    brand1Better: true
+    field: "efficiency",
+    type: "grade"
   },
   { 
     label: "Price", 
-    brand1: "₹3,500", 
-    brand2: "₹2,800",
+    field: "price",
     type: "price",
     higherIsBetter: false
   },
   { 
     label: "User Ratings", 
-    brand1: null, 
-    brand2: null,
+    field: "rating",
     type: "rating",
-    brand1Better: true,
-    random: "rating"
+    higherIsBetter: true
   }
 ];
 
-// Product images - replace with actual product images
-const redCooker = "https://via.placeholder.com/150x150/C85A54/FFFFFF?text=Red+Cooker";
-const blackCooker = "https://via.placeholder.com/150x150/3C3C3C/FFFFFF?text=Black+Cooker";
-
 // Reusable Comparison Row Component
-const ComparisonRow = memo(({ item, brand1Name, brand2Name, isLast }) => {
+const ComparisonRow = memo(({ item, product1, product2, isLast }) => {
   const [isVisible, setIsVisible] = useState(false);
   
   useEffect(() => {
@@ -107,25 +65,46 @@ const ComparisonRow = memo(({ item, brand1Name, brand2Name, isLast }) => {
     return () => clearTimeout(timer);
   }, []);
 
-  const getBadge = (isBrand1) => {
-    if (item.type === "text" && !item.brand1Better) return "➖";
+  const value1 = product1?.[item.field] || "N/A";
+  const value2 = product2?.[item.field] || "N/A";
+
+  // Format values
+  const displayValue1 = item.type === "price" && typeof value1 === "number" 
+    ? formatPrice(value1) 
+    : value1;
+  const displayValue2 = item.type === "price" && typeof value2 === "number" 
+    ? formatPrice(value2) 
+    : value2;
+
+  const getBadge = (isProduct1) => {
+    if (value1 === "N/A" || value2 === "N/A") return "➖";
     
-    const brand1Better = item.brand1Better || 
-      (item.type === "year" && parseInt(item.brand1) > parseInt(item.brand2)) ||
-      (item.type === "weight" && parseFloat(item.brand1) < parseFloat(item.brand2)) ||
-      (item.type === "price" && parseInt(item.brand1.replace(/[^0-9]/g, "")) < parseInt(item.brand2.replace(/[^0-9]/g, "")));
+    // If values are equal, no winner
+    if (value1 === value2) return "➖";
     
-    if (isBrand1) {
-      return brand1Better ? "✔️" : "➖";
+    let product1Better = false;
+    
+    if (item.type === "year" || item.type === "rating") {
+      product1Better = parseFloat(value1) > parseFloat(value2);
+    } else if (item.type === "weight") {
+      product1Better = parseFloat(value1) < parseFloat(value2);
+    } else if (item.type === "price") {
+      product1Better = parseFloat(value1) < parseFloat(value2);
+    } else if (item.type === "grade") {
+      const grades = ["C", "B", "A", "A+", "A++"];
+      product1Better = grades.indexOf(value1) > grades.indexOf(value2);
+    }
+    
+    if (isProduct1) {
+      return product1Better ? "✔️" : "➖";
     } else {
-      return !brand1Better ? "✔️" : "➖";
+      return !product1Better ? "✔️" : "➖";
     }
   };
 
-  const getCellClass = (isBrand1) => {
-    const badge = getBadge(isBrand1);
+  const getCellClass = (isProduct1) => {
+    const badge = getBadge(isProduct1);
     if (badge === "✔️") return "bg-green-50 border-green-200";
-    if (badge === "❌") return "bg-red-50 border-red-200";
     return "bg-slate-50";
   };
 
@@ -141,15 +120,15 @@ const ComparisonRow = memo(({ item, brand1Name, brand2Name, isLast }) => {
       <div className="grid grid-cols-1 md:grid-cols-2">
         <div className={`${getCellClass(true)} py-4 px-4 md:px-8 md:border-r border-gray-200 transition-all duration-300`}>
           <p className="text-slate-700 text-sm md:text-base text-center font-medium">
-            {getBadge(true)} {item.brand1}
+            {getBadge(true)} {displayValue1}
           </p>
-          <p className="text-xs text-slate-500 text-center mt-1 md:hidden">{brand1Name}</p>
+          <p className="text-xs text-slate-500 text-center mt-1 md:hidden">{product1?.brand} - {product1?.title}</p>
         </div>
         <div className={`${getCellClass(false)} py-4 px-4 md:px-8 transition-all duration-300 border-t md:border-t-0 border-gray-200`}>
           <p className="text-slate-700 text-sm md:text-base text-center font-medium">
-            {getBadge(false)} {item.brand2}
+            {getBadge(false)} {displayValue2}
           </p>
-          <p className="text-xs text-slate-500 text-center mt-1 md:hidden">{brand2Name}</p>
+          <p className="text-xs text-slate-500 text-center mt-1 md:hidden">{product2?.brand} - {product2?.title}</p>
         </div>
       </div>
     </div>
@@ -157,7 +136,7 @@ const ComparisonRow = memo(({ item, brand1Name, brand2Name, isLast }) => {
 });
 
 // Product Card Component
-const ProductCard = memo(({ image, brand, category, index }) => {
+const ProductCard = memo(({ product, index }) => {
   const [isVisible, setIsVisible] = useState(false);
   
   useEffect(() => {
@@ -172,21 +151,22 @@ const ProductCard = memo(({ image, brand, category, index }) => {
       }`}
     >
       <img 
-        src={image} 
-        alt={`${brand} ${category}`} 
+        src={getImage(product?.image)} 
+        alt={`${product?.brand} ${product?.category}`} 
         className="w-32 h-32 md:w-40 md:h-40 object-contain mb-4 md:mb-6 transition-transform duration-300 hover:scale-110 cursor-pointer"
         onError={(e) => {
-          e.target.src = "/placeholder.png";
+          e.target.src = "https://via.placeholder.com/150x150/64748b/FFFFFF?text=No+Image";
           e.target.onerror = null;
         }}
       />
-      <p className="text-white text-base md:text-lg font-semibold text-center">{brand} {category}</p>
+      <p className="text-white text-base md:text-lg font-semibold text-center">{product?.title || `${product?.brand} ${product?.category}`}</p>
+      <p className="text-slate-300 text-sm text-center mt-2">{product?.brand}</p>
     </div>
   );
 });
 
 // Sticky Header Component
-const StickyHeader = memo(({ brand1, brand2, category }) => {
+const StickyHeader = memo(({ product1, product2 }) => {
   const [isSticky, setIsSticky] = useState(false);
 
   useEffect(() => {
@@ -197,6 +177,10 @@ const StickyHeader = memo(({ brand1, brand2, category }) => {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
+  // Create unique display names
+  const display1 = product1?.title || `${product1?.brand} ${product1?.category}`;
+  const display2 = product2?.title || `${product2?.brand} ${product2?.category}`;
+
   return (
     <div className={`sticky top-0 z-50 transition-all duration-300 ${
       isSticky ? 'shadow-2xl' : ''
@@ -204,7 +188,11 @@ const StickyHeader = memo(({ brand1, brand2, category }) => {
       <div className="w-full bg-gradient-to-r from-slate-800 to-slate-900 py-4 md:py-8 px-4 md:px-12 flex items-center gap-2 md:gap-6 rounded-t-[30px]">
         <img src={logo} alt="Cookware Matrix logo" className="w-12 h-12 md:w-16 md:h-16" />
         <h1 className="text-white text-xl md:text-4xl font-bold flex-1 text-center">
-          {isSticky ? `${brand1} vs ${brand2}` : 'Discover Your Perfect Match'}
+          {isSticky ? (
+            <span className="text-base md:text-2xl">{display1} vs {display2}</span>
+          ) : (
+            'Discover Your Perfect Match'
+          )}
         </h1>
         <nav className="hidden md:flex gap-6 text-white text-sm font-medium">
           <Link to="/home" className="hover:text-emerald-400 transition-colors">Home</Link>
@@ -223,40 +211,57 @@ const Breadcrumb = () => (
     <span>›</span>
     <Link to="/compare" className="hover:text-emerald-600 transition-colors">Compare</Link>
     <span>›</span>
+    <Link to="/select-products" className="hover:text-emerald-600 transition-colors">Select Products</Link>
+    <span>›</span>
     <span className="text-slate-800 font-medium">Results</span>
   </div>
 );
 
 // Conclusion Card Component
-const ConclusionCard = memo(({ brand1, brand2, category }) => {
-  const brand1Score = 8.5;
-  const brand2Score = 7.2;
-  const winner = brand1Score > brand2Score ? brand1 : brand2;
+const ConclusionCard = memo(({ product1, product2 }) => {
+  // Calculate scores based on available data
+  const calculateScore = (product) => {
+    let score = 5; // Base score
+    if (product.rating) score += parseFloat(product.rating) / 2;
+    if (product.efficiency === "A++" || product.efficiency === "A+") score += 1;
+    if (product.durability === "High") score += 0.5;
+    return Math.min(score, 10).toFixed(1);
+  };
+
+  const score1 = calculateScore(product1);
+  const score2 = calculateScore(product2);
+  const winner = parseFloat(score1) > parseFloat(score2) ? product1 : 
+                 parseFloat(score1) < parseFloat(score2) ? product2 : null;
+
+  const display1 = product1?.title || `${product1?.brand} ${product1?.category}`;
+  const display2 = product2?.title || `${product2?.brand} ${product2?.category}`;
 
   return (
     <div className="bg-gradient-to-br from-emerald-50 to-teal-50 rounded-2xl p-6 md:p-8 mb-8 shadow-lg border-2 border-emerald-200 animate-fade-in">
       <h3 className="text-2xl md:text-3xl font-bold text-slate-800 mb-4 flex items-center gap-2">
-        🏆 Winner: {winner} {category}
+        {winner ? `🏆 Winner: ${winner?.title || winner?.brand}` : '🤝 It\'s a Tie!'}
       </h3>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
         <div className="bg-white rounded-lg p-4 shadow">
-          <p className="text-lg font-semibold text-slate-700">{brand1}</p>
-          <p className="text-3xl font-bold text-emerald-600">{brand1Score}/10</p>
+          <p className="text-lg font-semibold text-slate-700">{display1}</p>
+          <p className="text-3xl font-bold text-emerald-600">{score1}/10</p>
         </div>
         <div className="bg-white rounded-lg p-4 shadow">
-          <p className="text-lg font-semibold text-slate-700">{brand2}</p>
-          <p className="text-3xl font-bold text-teal-600">{brand2Score}/10</p>
+          <p className="text-lg font-semibold text-slate-700">{display2}</p>
+          <p className="text-3xl font-bold text-teal-600">{score2}/10</p>
         </div>
       </div>
-      <div className="space-y-2 text-slate-700">
-        <p className="font-medium">Key Advantages:</p>
-        <ul className="list-disc list-inside space-y-1 text-sm md:text-base">
-          <li>Superior durability (10+ years)</li>
-          <li>Better heat conductivity and retention</li>
-          <li>Oven-safe compatibility</li>
-          <li>Higher energy efficiency rating</li>
-        </ul>
-      </div>
+      {winner && (
+        <div className="space-y-2 text-slate-700">
+          <p className="font-medium">Why {winner?.title || winner?.brand} wins:</p>
+          <ul className="list-disc list-inside space-y-1 text-sm md:text-base">
+            {winner?.rating && <li>Higher user rating ({winner.rating}★)</li>}
+            {winner?.efficiency && <li>Better energy efficiency ({winner.efficiency})</li>}
+            {winner?.durability && <li>Superior durability ({winner.durability})</li>}
+            {winner?.price && <li>Competitive pricing ({formatPrice(winner.price)})</li>}
+          </ul>
+        </div>
+      )}
     </div>
   );
 });
@@ -264,90 +269,94 @@ const ConclusionCard = memo(({ brand1, brand2, category }) => {
 export default function ComparisonResult() {
   const location = useLocation();
   const navigate = useNavigate();
-  const { category, brand1, brand2 } = location.state || {
-    category: "Pressure Cooker",
-    brand1: "Prestige",
-    brand2: "Pigeon"
-  };
+  
+  // Extract state - prefer product IDs if present
+  const { 
+    product1: directProduct1, 
+    product2: directProduct2, 
+    category, 
+    brand1, 
+    brand2, 
+    product1Id, 
+    product2Id 
+  } = location.state || {};
 
-  const [products, setProducts] = useState([]);
-  const [dynamicComparison, setDynamicComparison] = useState([]);
+  const [product1, setProduct1] = useState(directProduct1 || null);
+  const [product2, setProduct2] = useState(directProduct2 || null);
+  const [loading, setLoading] = useState(false);
   const [showToast, setShowToast] = useState(false);
 
-  // Redirect if no data
+  // Fetch products by ID if IDs are provided but products aren't
   useEffect(() => {
-    if (!category || !brand1 || !brand2) {
-      navigate('/compare');
-    }
-  }, [category, brand1, brand2, navigate]);
-
-  // Maps display labels to MongoDB fields
-  const fieldMap = {
-    "Release Date": "releaseYear",
-    "Material": "material",
-    "Dimensions": "dimensions",
-    "Weight": "weight",
-    "Heat Conductivity": "heatCompatibility",
-    "Heat Retention": "durability",
-    "Stovetop/Oven compatibility": "heatCompatibility",
-    "Durability/Longevity": "durability",
-    "Energy Efficiency": "efficiency",
-    "Price": "price",
-    "User Ratings": "rating",
-  };
-
-  // Fetch Data from Backend
-  useEffect(() => {
-    async function fetchData() {
-      try {
-        const res = await fetch(
-          `http://localhost:5000/api/cookware/compare?brand1=${brand1}&brand2=${brand2}&category=${category}`
-        );
-        const data = await res.json();
-
-        // Safety check
-        if (!Array.isArray(data)) {
-          setProducts([]);
-          return;
+    const fetchProducts = async () => {
+      // Only fetch if we have IDs but no direct product objects
+      if (product1Id && !directProduct1) {
+        setLoading(true);
+        try {
+          const res = await fetch(`http://localhost:5000/api/cookware/${product1Id}`);
+          const data = await res.json();
+          setProduct1(data);
+        } catch (error) {
+          console.error("Error fetching product1:", error);
         }
+      }
 
-        setProducts(data);
+      if (product2Id && !directProduct2) {
+        setLoading(true);
+        try {
+          const res = await fetch(`http://localhost:5000/api/cookware/${product2Id}`);
+          const data = await res.json();
+          setProduct2(data);
+        } catch (error) {
+          console.error("Error fetching product2:", error);
+        }
+      }
+      
+      setLoading(false);
+    };
 
-        // Build comparison values dynamically with proper field mapping
-        const extracted = comparisonData.map(row => {
-          let brand1Value = data[0]?.[fieldMap[row.label]] ?? row.brand1;
-          let brand2Value = data[1]?.[fieldMap[row.label]] ?? row.brand2;
+    fetchProducts();
+  }, [product1Id, product2Id, directProduct1, directProduct2]);
 
-          // Format price values using formatPrice utility
-          if (row.label === "Price" && data[0]?.price && data[1]?.price) {
-            brand1Value = formatPrice(data[0].price);
-            brand2Value = formatPrice(data[1].price);
-          }
+  // Redirect if no products provided
+  useEffect(() => {
+    if (!loading && !product1 && !product2 && !product1Id && !product2Id) {
+      navigate("/compare");
+    }
+  }, [product1, product2, product1Id, product2Id, loading, navigate]);
 
-          return {
-            ...row,
-            brand1: brand1Value,
-            brand2: brand2Value,
-          };
-        });
-
-        setDynamicComparison(extracted);
-        
-      } catch (err) {
-        console.log("Fetch error:", err);
-        setProducts([]);
+  // Prevent comparing the same product (check by ID or unique identifier)
+  useEffect(() => {
+    if (product1 && product2) {
+      // Check if products are identical (same ID or all fields match)
+      const isSameProduct = 
+        (product1._id && product2._id && product1._id === product2._id) ||
+        (product1.id && product2.id && product1.id === product2.id) ||
+        (product1.title === product2.title && 
+         product1.brand === product2.brand && 
+         product1.price === product2.price);
+      
+      if (isSameProduct) {
+        alert("Cannot compare identical products. Please select different products.");
+        navigate("/select-products", { state: { category } });
       }
     }
+  }, [product1, product2, category, navigate]);
 
-    fetchData();
-  }, [brand1, brand2, category]);
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center">
+        <div className="text-white text-2xl">Loading comparison...</div>
+      </div>
+    );
+  }
 
-  if (!category || !brand1 || !brand2) {
+  if (!product1 || !product2) {
     return null;
   }
 
   const handleShare = () => {
-    const text = `Check out this comparison: ${brand1} vs ${brand2} ${category}`;
+    const text = `Check out this comparison: ${product1.title || product1.brand} vs ${product2.title || product2.brand}`;
     if (navigator.share) {
       navigator.share({ title: 'Cookware Comparison', text });
     } else {
@@ -359,11 +368,18 @@ export default function ComparisonResult() {
 
   const handleSave = () => {
     const saved = JSON.parse(localStorage.getItem('savedComparisons') || '[]');
-    saved.push({ category, brand1, brand2, date: new Date().toISOString() });
+    saved.push({ 
+      product1: product1.title || product1.brand,
+      product2: product2.title || product2.brand,
+      category, 
+      date: new Date().toISOString() 
+    });
     localStorage.setItem('savedComparisons', JSON.stringify(saved));
     setShowToast(true);
     setTimeout(() => setShowToast(false), 3000);
   };
+
+  const displayTitle = `${product1.title || product1.brand} vs ${product2.title || product2.brand} - ${category}`;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex flex-col items-center justify-center p-2 md:p-4">
@@ -394,7 +410,7 @@ export default function ComparisonResult() {
       {/* Main Container */}
       <div className="w-full max-w-[1400px] bg-gradient-to-br from-slate-100 to-gray-50 rounded-[20px] md:rounded-[40px] shadow-2xl overflow-hidden">
         {/* Sticky Header */}
-        <StickyHeader brand1={brand1} brand2={brand2} category={category} />
+        <StickyHeader product1={product1} product2={product2} />
 
         {/* Main Content */}
         <div className="p-4 md:p-12">
@@ -404,29 +420,15 @@ export default function ComparisonResult() {
           {/* Comparison Title Bar */}
           <div className="bg-gradient-to-r from-emerald-600 to-teal-600 rounded-t-2xl py-3 md:py-4 px-4 md:px-8 mb-0 shadow-lg">
             <h2 className="text-white text-base md:text-xl font-semibold text-center md:text-left">
-              {brand1} {category} vs {brand2} {category}
+              {displayTitle}
             </h2>
           </div>
 
           {/* Product Images Section */}
           <div className="bg-gradient-to-br from-slate-50 to-gray-100 rounded-b-2xl p-4 md:p-8 mb-8 border-l border-r border-b border-gray-200">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
-              {Array.isArray(products) && products.length > 0 ? (
-                products.map((p, i) => (
-                  <ProductCard
-                    key={i}
-                    image={getImage(p.image)}
-                    brand={p.brand}
-                    category={category}
-                    index={i}
-                  />
-                ))
-              ) : (
-                <>
-                  <ProductCard image={redCooker} brand={brand1} category={category} index={0} />
-                  <ProductCard image={blackCooker} brand={brand2} category={category} index={1} />
-                </>
-              )}
+              <ProductCard product={product1} index={0} />
+              <ProductCard product={product2} index={1} />
             </div>
           </div>
 
@@ -447,20 +449,20 @@ export default function ComparisonResult() {
           </div>
 
           {/* Conclusion Card */}
-          <ConclusionCard brand1={brand1} brand2={brand2} category={category} />
+          <ConclusionCard product1={product1} product2={product2} />
 
           {/* Comparison Table */}
           <div className="bg-white rounded-2xl overflow-hidden mb-8 shadow-lg border border-gray-200">
             <div className="bg-gradient-to-r from-slate-700 to-slate-800 py-3 px-4 md:px-8">
               <h3 className="text-white text-base md:text-lg font-semibold">Detailed Comparison</h3>
             </div>
-            {(dynamicComparison.length > 0 ? dynamicComparison : comparisonData).map((item, index) => (
+            {comparisonData.map((item, index) => (
               <ComparisonRow
                 key={item.label}
                 item={item}
-                brand1Name={brand1}
-                brand2Name={brand2}
-                isLast={index === (dynamicComparison.length > 0 ? dynamicComparison : comparisonData).length - 1}
+                product1={product1}
+                product2={product2}
+                isLast={index === comparisonData.length - 1}
               />
             ))}
           </div>
@@ -477,10 +479,10 @@ export default function ComparisonResult() {
       </div>
 
       {/* Floating Back Button */}
-      <Link to="/compare">
+      <Link to="/select-products" state={{ category }}>
         <button 
           className="fixed bottom-6 right-6 bg-gradient-to-r from-emerald-600 to-teal-600 text-white w-14 h-14 md:w-16 md:h-16 rounded-full shadow-2xl hover:from-emerald-700 hover:to-teal-700 transition-all transform hover:scale-110 flex items-center justify-center text-2xl z-50"
-          title="Back to Compare"
+          title="Back to Product Selection"
         >
           ⤴
         </button>

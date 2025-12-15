@@ -6,7 +6,7 @@ const mongoose = require("mongoose");
 const cors = require("cors");
 require("dotenv").config();
 
-const app = express();
+const app = express(); // ✅ MUST COME FIRST
 const PORT = process.env.PORT || 5000;
 
 // ===============================
@@ -29,13 +29,15 @@ mongoose
 // ===============================
 // ROUTES
 // ===============================
-
-// Root health check
 app.get("/", (req, res) => {
   res.send("🔥 Cookware Matrix API is running");
 });
 
-// Import and use cookware routes
+// ✅ AUTH ROUTES (NOW CORRECT)
+const authRoutes = require("./routes/authRoutes");
+app.use("/api/auth", authRoutes);
+
+// Cookware routes
 const cookwareRoutes = require("./routes/cookwareRoutes");
 app.use("/api/cookware", cookwareRoutes);
 

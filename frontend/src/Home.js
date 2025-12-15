@@ -1,6 +1,6 @@
 // Home.js
 import React, { useState, useEffect } from "react";
-import { Search, Flame, TrendingUp, User, LogOut } from "lucide-react";
+import { Search, Flame, TrendingUp, User, LogOut, Sparkles } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import logo from "./Assets/logo.png";
 import { useAuth } from "./App";
@@ -176,6 +176,17 @@ export default function HomePage() {
                 Search
               </button>
             </div>
+          </div>
+
+          {/* Know Your Materials Button */}
+          <div className="mt-8 animate-fadeInUp" style={{ animationDelay: '0.3s' }}>
+            <button
+              onClick={() => navigate('/materials')}
+              className="inline-flex items-center gap-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white px-8 py-4 rounded-full font-semibold hover:from-purple-400 hover:to-pink-400 transition-all transform hover:scale-105 shadow-lg"
+            >
+              <Sparkles className="w-5 h-5" />
+              Know Your Materials
+            </button>
           </div>
         </div>
 

@@ -7,10 +7,12 @@ import Auth from "./Auth";
 import Home from "./Home";
 import UserProfile from "./UserProfile";
 import CategoryPage from "./Category";
+import Materials from './Materials';
 import Compare from "./Compare";
 import ComparisonResult from "./ComparisonResult";
 import SearchResultsPage from "./SearchResultsPage";
 import { useEffect } from "react";
+import SelectProducts from "./SelectProducts";
 
 
 // Create Auth Context
@@ -265,7 +267,9 @@ export default function App() {
           <Route path="/search" element={<SearchResultsPage />} />
           <Route path="/auth" element={<Auth />} /> 
           <Route path="/about" element={<About />} />
+          <Route path="/select-products" element={<SelectProducts />} />
           <Route path="/help" element={<Help />} />
+          <Route path="/materials" element={<Materials />} />
           <Route path="/compare" element={
             <ProtectedRoute>
               <Compare />

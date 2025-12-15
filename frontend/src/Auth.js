@@ -1,11 +1,9 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import logo from "./Assets/logo.png";
-import { useAuth } from "./App"; // Import the useAuth hook
 
 export default function Auth() {
   const navigate = useNavigate();
-  const { login, signup, skip } = useAuth(); // Get auth functions from context
   
   const [isLogin, setIsLogin] = useState(true);
   const [formData, setFormData] = useState({
@@ -38,18 +36,33 @@ export default function Auth() {
       password: formData.password,
     };
 
-    // Call context functions
-    if (isLogin) {
-      login(userData);
-    } else {
-      signup(userData);
-    }
+    // API call
+    const endpoint = isLogin
+      ? "http://localhost:5000/api/auth/login"
+      : "http://localhost:5000/api/auth/signup";
 
-    navigate("/home");
+    fetch(endpoint, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(userData)
+    })
+      .then(res => res.json())
+      .then(data => {
+        if (data.token) {
+          localStorage.setItem("token", data.token);
+          localStorage.setItem("user", JSON.stringify(data.user));
+          navigate("/home");
+        } else {
+          alert(data.message || "Auth failed");
+        }
+      })
+      .catch(error => {
+        console.error("Auth error:", error);
+        alert("Authentication failed. Please try again.");
+      });
   };
 
   const handleSkip = () => {
-    skip();
     navigate("/home");
   };
 

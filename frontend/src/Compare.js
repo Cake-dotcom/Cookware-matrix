@@ -6,53 +6,13 @@ import logo from "./Assets/logo.png";
 const redCooker = "https://via.placeholder.com/60x60/C85A54/FFFFFF?text=Red";
 const blackCooker = "https://via.placeholder.com/60x60/3C3C3C/FFFFFF?text=Black";
 
-// Popular comparisons - keeping static for MVP
-const popularComparisons = [
-  { brand1: "Prestige", brand2: "Pigeon", category: "Pressure Cooker" },
-  { brand1: "Hawkins", brand2: "Butterfly", category: "Pressure Cooker" },
-  { brand1: "Prestige", brand2: "Meyer", category: "Frying Pan" },
-  { brand1: "Pigeon", brand2: "Cello", category: "Frying Pan" },
-  { brand1: "Vinod", brand2: "Butterfly", category: "Sauce Pan" },
-  { brand1: "Prestige", brand2: "Hawkins", category: "Wok" },
-  { brand1: "Pigeon", brand2: "Vinod", category: "Kadhai" },
-  { brand1: "Prestige", brand2: "Cello", category: "Tawa" },
-];
-
-// Reusable Comparison Card Component
-function ComparisonCard({ brand1, brand2, category, onClick, delay }) {
-  return (
-    <div 
-      onClick={onClick}
-      className="bg-gradient-to-r from-slate-700 to-slate-800 rounded-2xl px-6 py-4 flex items-center justify-between shadow-lg cursor-pointer hover:from-slate-600 hover:to-slate-700 hover:-translate-y-1 hover:shadow-xl transition-all duration-300 animate-slideUpStagger"
-      style={{ animationDelay: `${delay}ms` }}
-    >
-      <div className="flex items-center gap-2">
-        <img src={redCooker} alt={`${brand1} ${category}`} className="w-10 h-10 rounded-lg" />
-        <div className="text-white">
-          <p className="font-semibold text-sm">{brand1}</p>
-          <p className="text-xs text-gray-300">{category}</p>
-        </div>
-      </div>
-      <div className="bg-emerald-600 text-white w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs shadow-md">
-        ⚡
-      </div>
-      <div className="flex items-center gap-2">
-        <img src={blackCooker} alt={`${brand2} ${category}`} className="w-10 h-10 rounded-lg" />
-        <div className="text-white">
-          <p className="font-semibold text-sm">{brand2}</p>
-          <p className="text-xs text-gray-300">{category}</p>
-        </div>
-      </div>
-    </div>
-  );
-}
-
 export default function Compare() {
   const navigate = useNavigate();
   
   // State for fetched data
   const [categories, setCategories] = useState([]);
   const [brands, setBrands] = useState([]);
+  const [recommended, setRecommended] = useState([]);
   const [loadingCategories, setLoadingCategories] = useState(true);
   const [loadingBrands, setLoadingBrands] = useState(false);
   
@@ -76,6 +36,25 @@ export default function Compare() {
       })
       .catch(() => {
         setLoadingCategories(false);
+      });
+  }, []);
+
+  // Fetch recommended comparisons
+  useEffect(() => {
+    fetch("http://localhost:5000/api/cookware/recommended")
+      .then(res => res.json())
+      .then(data => {
+        // Ensure data is an array
+        if (Array.isArray(data)) {
+          setRecommended(data);
+        } else {
+          console.error("Recommended data is not an array:", data);
+          setRecommended([]);
+        }
+      })
+      .catch((error) => {
+        console.error("Error fetching recommended:", error);
+        setRecommended([]);
       });
   }, []);
 
@@ -130,14 +109,11 @@ export default function Compare() {
       return;
     }
     
-    if (selectedBrand1 === selectedBrand2) {
-      alert('Please select two different brands to compare!');
-      return;
-    }
+    // Removed same brand restriction - users can now compare products from the same brand
     
     setIsComparing(true);
     setTimeout(() => {
-      navigate('/comparison-result', {
+      navigate('/select-products', {
         state: {
           category: selectedCategory,
           brand1: selectedBrand1,
@@ -145,16 +121,6 @@ export default function Compare() {
         }
       });
     }, 500);
-  };
-
-  const handlePopularComparisonClick = (comparison) => {
-    navigate('/comparison-result', {
-      state: {
-        category: comparison.category,
-        brand1: comparison.brand1,
-        brand2: comparison.brand2
-      }
-    });
   };
 
   const currentStep = !selectedCategory ? 1 : !selectedBrand1 ? 2 : !selectedBrand2 ? 3 : 4;
@@ -357,26 +323,66 @@ export default function Compare() {
             </div>
           </div>
 
-          {/* Popular Comparisons Section */}
+          {/* Recommended Comparisons */}
           <div className="bg-gradient-to-br from-slate-700/30 to-slate-800/30 backdrop-blur-sm rounded-3xl p-12 border border-slate-600/30 shadow-lg">
             <div className="flex items-center gap-3 mb-8">
-              <span className="text-3xl">🔥</span>
-              <h2 className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-teal-400 text-3xl font-bold tracking-tight">Popular Comparisons</h2>
+              <span className="text-3xl">✨</span>
+              <h2 className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-teal-400 text-3xl font-bold">
+                Recommended Comparisons
+              </h2>
             </div>
-            
-            {/* Grid of comparisons - 2 columns, responsive */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {popularComparisons.map((comparison, index) => (
-                <ComparisonCard
-                  key={index}
-                  brand1={comparison.brand1}
-                  brand2={comparison.brand2}
-                  category={comparison.category}
-                  onClick={() => handlePopularComparisonClick(comparison)}
-                  delay={index * 100}
-                />
-              ))}
-            </div>
+
+            {recommended.length === 0 ? (
+              <div className="text-center text-slate-400 py-8">
+                No recommendations available at the moment.
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {recommended.map((item, index) => (
+                  <div
+                    key={index}
+                    onClick={() =>
+                      navigate("/comparison-result", {
+                        state: {
+                          category: item.category,
+                          brand1: item.product1.brand,
+                          brand2: item.product2.brand,
+                          product1Id: item.product1._id,
+                          product2Id: item.product2._id
+                        }
+                      })
+                    }
+                    className="bg-gradient-to-r from-slate-700 to-slate-800 rounded-2xl px-6 py-4 flex items-center justify-between shadow-lg cursor-pointer hover:scale-105 transition-all"
+                  >
+                    <div className="flex items-center gap-3">
+                      <img
+                        src={item.product1.image}
+                        className="w-12 h-12 object-contain bg-white rounded-lg p-1"
+                        alt=""
+                      />
+                      <div className="text-white">
+                        <p className="font-semibold text-sm">{item.product1.brand}</p>
+                        <p className="text-xs text-gray-300">{item.category}</p>
+                      </div>
+                    </div>
+
+                    <span className="text-emerald-400 font-bold">VS</span>
+
+                    <div className="flex items-center gap-3">
+                      <div className="text-right text-white">
+                        <p className="font-semibold text-sm">{item.product2.brand}</p>
+                        <p className="text-xs text-gray-300">{item.category}</p>
+                      </div>
+                      <img
+                        src={item.product2.image}
+                        className="w-12 h-12 object-contain bg-white rounded-lg p-1"
+                        alt=""
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       </div>
