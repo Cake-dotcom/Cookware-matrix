@@ -1,6 +1,5 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import logo from "./Assets/logo.png";
 
 export default function Auth() {
   const navigate = useNavigate();
@@ -20,46 +19,44 @@ export default function Auth() {
     });
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // Password validation for signup
     if (!isLogin && formData.password !== formData.confirmPassword) {
       alert("Passwords do not match!");
       return;
     }
 
-    // Create user object with full data
-    const userData = {
-      name: formData.name || formData.email.split('@')[0],
-      email: formData.email,
-      password: formData.password,
-    };
-
-    // API call
     const endpoint = isLogin
       ? "http://localhost:5000/api/auth/login"
       : "http://localhost:5000/api/auth/signup";
 
-    fetch(endpoint, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(userData)
-    })
-      .then(res => res.json())
-      .then(data => {
-        if (data.token) {
-          localStorage.setItem("token", data.token);
-          localStorage.setItem("user", JSON.stringify(data.user));
-          navigate("/home");
-        } else {
-          alert(data.message || "Auth failed");
-        }
-      })
-      .catch(error => {
-        console.error("Auth error:", error);
-        alert("Authentication failed. Please try again.");
+    try {
+      const res = await fetch(endpoint, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: formData.name,
+          email: formData.email,
+          password: formData.password
+        })
       });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        alert(data.message || "Authentication failed");
+        return;
+      }
+
+      // ✅ SAVE AUTH STATE
+      localStorage.setItem("token", data.token);
+      localStorage.setItem("user", JSON.stringify(data.user));
+
+      navigate("/home");
+    } catch (err) {
+      alert("Server error");
+    }
   };
 
   const handleSkip = () => {
@@ -102,7 +99,9 @@ export default function Auth() {
 
         {/* Logo + header */}
         <div className="text-center mb-8 animate-slideDown">
-          <img src={logo} alt="Cookware Matrix logo" className="w-20 h-20 mx-auto mb-4 drop-shadow-2xl" />
+          <div className="w-20 h-20 mx-auto mb-4 bg-gradient-to-br from-emerald-400 to-teal-500 rounded-2xl flex items-center justify-center text-white text-3xl font-bold shadow-2xl">
+            CM
+          </div>
           <h1 className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 via-teal-300 to-cyan-400 text-3xl md:text-4xl font-bold mb-2">
             {isLogin ? "Welcome Back" : "Join Us"}
           </h1>
@@ -148,7 +147,7 @@ export default function Auth() {
                 onChange={handleInputChange}
                 placeholder="Enter your name"
                 required={!isLogin}
-                className="w-full px-4 py-3 rounded-xl bg-slate-800/60 border border-slate-700/50 text-slate-200"
+                className="w-full px-4 py-3 rounded-xl bg-slate-800/60 border border-slate-700/50 text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
               />
             </div>
           )}
@@ -163,7 +162,7 @@ export default function Auth() {
               onChange={handleInputChange}
               placeholder="you@email.com"
               required
-              className="w-full px-4 py-3 rounded-xl bg-slate-800/60 border border-slate-700/50 text-slate-200"
+              className="w-full px-4 py-3 rounded-xl bg-slate-800/60 border border-slate-700/50 text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
             />
           </div>
 
@@ -177,7 +176,7 @@ export default function Auth() {
               onChange={handleInputChange}
               placeholder="Enter your password"
               required
-              className="w-full px-4 py-3 rounded-xl bg-slate-800/60 border border-slate-700/50 text-slate-200"
+              className="w-full px-4 py-3 rounded-xl bg-slate-800/60 border border-slate-700/50 text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
             />
           </div>
 
@@ -192,7 +191,7 @@ export default function Auth() {
                 onChange={handleInputChange}
                 placeholder="Confirm your password"
                 required={!isLogin}
-                className="w-full px-4 py-3 rounded-xl bg-slate-800/60 border border-slate-700/50 text-slate-200"
+                className="w-full px-4 py-3 rounded-xl bg-slate-800/60 border border-slate-700/50 text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
               />
             </div>
           )}
@@ -200,7 +199,7 @@ export default function Auth() {
           {/* Forgot password */}
           {isLogin && (
             <div className="text-right">
-              <button type="button" className="text-sm text-emerald-400 hover:text-emerald-300">
+              <button type="button" className="text-sm text-emerald-400 hover:text-emerald-300 transition-colors">
                 Forgot password?
               </button>
             </div>
@@ -209,7 +208,7 @@ export default function Auth() {
           {/* Submit */}
           <button
             type="submit"
-            className="w-full bg-gradient-to-r from-emerald-500 to-teal-500 text-white py-3.5 rounded-xl font-semibold shadow-lg hover:scale-[1.02]"
+            className="w-full bg-gradient-to-r from-emerald-500 to-teal-500 text-white py-3.5 rounded-xl font-semibold shadow-lg hover:scale-[1.02] transition-transform"
           >
             {isLogin ? "Log In" : "Create Account"}
           </button>
@@ -218,7 +217,7 @@ export default function Auth() {
           <button
             type="button"
             onClick={handleSkip}
-            className="w-full bg-slate-800/60 border border-slate-700/50 text-slate-300 py-3.5 rounded-xl font-semibold hover:bg-slate-700/60"
+            className="w-full bg-slate-800/60 border border-slate-700/50 text-slate-300 py-3.5 rounded-xl font-semibold hover:bg-slate-700/60 transition-colors"
           >
             Skip for now
           </button>
@@ -234,7 +233,7 @@ export default function Auth() {
 
           <div className="grid grid-cols-2 gap-3">
             {/* Google */}
-            <button className="flex items-center justify-center gap-2 px-4 py-3 bg-slate-800/60 border border-slate-700/50 rounded-xl text-slate-300">
+            <button className="flex items-center justify-center gap-2 px-4 py-3 bg-slate-800/60 border border-slate-700/50 rounded-xl text-slate-300 hover:bg-slate-700/60 transition-colors">
               <svg className="w-5 h-5" viewBox="0 0 24 24">
                 <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
                 <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
@@ -245,7 +244,7 @@ export default function Auth() {
             </button>
 
             {/* GitHub */}
-            <button className="flex items-center justify-center gap-2 px-4 py-3 bg-slate-800/60 border border-slate-700/50 rounded-xl text-slate-300">
+            <button className="flex items-center justify-center gap-2 px-4 py-3 bg-slate-800/60 border border-slate-700/50 rounded-xl text-slate-300 hover:bg-slate-700/60 transition-colors">
               <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
                 <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
               </svg>
@@ -256,9 +255,9 @@ export default function Auth() {
 
         {/* Footer */}
         <div className="mt-6 text-center text-sm text-slate-400">
-          <Link to="/" className="hover:text-emerald-400">
+          <a href="#" className="hover:text-emerald-400 transition-colors">
             ← Back to Home
-          </Link>
+          </a>
         </div>
       </div>
     </div>

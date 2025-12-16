@@ -1,4 +1,4 @@
-import React, { createContext, useState, useContext } from "react";
+import React, { createContext, useState, useContext, useEffect } from "react";
 import logo from "./Assets/logo.png";
 import { BrowserRouter as Router, Routes, Route, Link, Navigate } from "react-router-dom";
 import About from "./About";
@@ -9,11 +9,11 @@ import UserProfile from "./UserProfile";
 import CategoryPage from "./Category";
 import Materials from './Materials';
 import Compare from "./Compare";
+import ProtectedRoute from "./components/ProtectedRoute";
 import ComparisonResult from "./ComparisonResult";
 import SearchResultsPage from "./SearchResultsPage";
-import { useEffect } from "react";
 import SelectProducts from "./SelectProducts";
-
+import Profile from "./Profile";
 
 // Create Auth Context
 const AuthContext = createContext();
@@ -28,15 +28,22 @@ export const useAuth = () => {
 
 // Auth Provider Component
 function AuthProvider({ children }) {
-  const [user, setUser] = useState(() => {
-    // Load user from localStorage when site loads
-    const storedUser = localStorage.getItem("user");
-    return storedUser ? JSON.parse(storedUser) : null;
-  });
+  const [user, setUser] = useState(null);
+  const [isSkipped, setIsSkipped] = useState(false);
 
-  const [isSkipped, setIsSkipped] = useState(() => {
-    return localStorage.getItem("isSkipped") === "true";
-  });
+  // ✅ Persist auth state on page refresh
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    const storedUser = localStorage.getItem("user");
+    const skipped = localStorage.getItem("isSkipped");
+
+    if (token && storedUser) {
+      setUser(JSON.parse(storedUser));
+      setIsSkipped(false);
+    } else if (skipped === "true") {
+      setIsSkipped(true);
+    }
+  }, []);
 
   const login = (userData) => {
     setUser(userData);
@@ -70,6 +77,7 @@ function AuthProvider({ children }) {
 
     // Clear everything when logging out
     localStorage.removeItem("user");
+    localStorage.removeItem("token");
     localStorage.removeItem("isSkipped");
   };
 
@@ -81,15 +89,6 @@ function AuthProvider({ children }) {
 }
 
 // Protected Route Component
-function ProtectedRoute({ children }) {
-  const { user } = useAuth();
-  
-  if (!user) {
-    return <Navigate to="/auth" replace />;
-  }
-  
-  return children;
-}
 
 function LandingPage() {
   return (
@@ -270,6 +269,7 @@ export default function App() {
           <Route path="/select-products" element={<SelectProducts />} />
           <Route path="/help" element={<Help />} />
           <Route path="/materials" element={<Materials />} />
+          <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
           <Route path="/compare" element={
             <ProtectedRoute>
               <Compare />
@@ -281,6 +281,7 @@ export default function App() {
             </ProtectedRoute>
           } />
           <Route path="/comparison-result" element={<ComparisonResult />} />
+          
         </Routes>
       </Router>
     </AuthProvider>

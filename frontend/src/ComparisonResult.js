@@ -285,6 +285,7 @@ export default function ComparisonResult() {
   const [product2, setProduct2] = useState(directProduct2 || null);
   const [loading, setLoading] = useState(false);
   const [showToast, setShowToast] = useState(false);
+  const [toastMessage, setToastMessage] = useState("");
 
   // Fetch products by ID if IDs are provided but products aren't
   useEffect(() => {
@@ -318,6 +319,14 @@ export default function ComparisonResult() {
     fetchProducts();
   }, [product1Id, product2Id, directProduct1, directProduct2]);
 
+  // ✅ Verify product IDs are available
+  useEffect(() => {
+    if (product1 && product2) {
+      console.log("Product 1 ID:", product1._id);
+      console.log("Product 2 ID:", product2._id);
+    }
+  }, [product1, product2]);
+
   // Redirect if no products provided
   useEffect(() => {
     if (!loading && !product1 && !product2 && !product1Id && !product2Id) {
@@ -343,6 +352,58 @@ export default function ComparisonResult() {
     }
   }, [product1, product2, category, navigate]);
 
+  // ✅ SAVE COMPARISON TO DATABASE
+  const handleSaveComparison = async () => {
+    const user = JSON.parse(localStorage.getItem("user"));
+
+    if (!user) {
+      setToastMessage("⚠️ Please login to save comparisons");
+      setShowToast(true);
+      setTimeout(() => setShowToast(false), 3000);
+      return;
+    }
+
+    // Validate product IDs exist
+    if (!product1?._id || !product2?._id) {
+      setToastMessage("❌ Cannot save: Product IDs missing");
+      setShowToast(true);
+      setTimeout(() => setShowToast(false), 3000);
+      return;
+    }
+
+    try {
+      const res = await fetch("http://localhost:5000/api/comparisons", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          userId: user._id || user.id,
+          product1: product1._id,
+          product2: product2._id,
+          category: category || product1.category
+        })
+      });
+
+      const data = await res.json();
+
+      if (res.ok) {
+        setToastMessage("✅ Comparison saved successfully!");
+        setShowToast(true);
+        setTimeout(() => setShowToast(false), 3000);
+      } else {
+        setToastMessage(data.message || "❌ Save failed");
+        setShowToast(true);
+        setTimeout(() => setShowToast(false), 3000);
+      }
+    } catch (err) {
+      console.error("Save error:", err);
+      setToastMessage("❌ Error saving comparison");
+      setShowToast(true);
+      setTimeout(() => setShowToast(false), 3000);
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center">
@@ -361,25 +422,13 @@ export default function ComparisonResult() {
       navigator.share({ title: 'Cookware Comparison', text });
     } else {
       navigator.clipboard.writeText(window.location.href);
+      setToastMessage("📋 Link copied to clipboard!");
       setShowToast(true);
       setTimeout(() => setShowToast(false), 3000);
     }
   };
 
-  const handleSave = () => {
-    const saved = JSON.parse(localStorage.getItem('savedComparisons') || '[]');
-    saved.push({ 
-      product1: product1.title || product1.brand,
-      product2: product2.title || product2.brand,
-      category, 
-      date: new Date().toISOString() 
-    });
-    localStorage.setItem('savedComparisons', JSON.stringify(saved));
-    setShowToast(true);
-    setTimeout(() => setShowToast(false), 3000);
-  };
-
-  const displayTitle = `${product1.title || product1.brand} vs ${product2.title || product2.brand} - ${category}`;
+  const displayTitle = `${product1.title || product1.brand} vs ${product2.title || product2.brand} - ${category || product1.category}`;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex flex-col items-center justify-center p-2 md:p-4">
@@ -403,7 +452,7 @@ export default function ComparisonResult() {
       {/* Toast Notification */}
       {showToast && (
         <div className="fixed top-4 right-4 bg-emerald-600 text-white px-6 py-3 rounded-lg shadow-2xl z-50 animate-slide-up">
-          ✓ Action completed successfully!
+          {toastMessage}
         </div>
       )}
 
@@ -441,7 +490,7 @@ export default function ComparisonResult() {
               📤 Share
             </button>
             <button 
-              onClick={handleSave}
+              onClick={handleSaveComparison}
               className="bg-gradient-to-r from-purple-600 to-purple-700 text-white px-6 py-2 rounded-full text-sm font-medium shadow-lg hover:from-purple-700 hover:to-purple-800 transition-all transform hover:scale-105"
             >
               💾 Save
