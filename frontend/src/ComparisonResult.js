@@ -385,72 +385,78 @@ export default function ComparisonResult() {
     }
   }, [product1, product2, category, navigate]);
 
-  const handleSaveComparison = async () => {
-    if (!user) {
-      setSaveStatus('error');
-      setSaveMessage('⚠️ Please login to save comparisons');
-      setTimeout(() => {
-        setSaveStatus('idle');
-        setSaveMessage('');
-        navigate('/auth');
-      }, 2000);
-      return;
-    }
+// Find and replace the handleSaveComparison function with this updated version:
 
-    if (!product1?._id || !product2?._id) {
-      setSaveStatus('error');
-      setSaveMessage('❌ Cannot save: Product IDs missing');
+const handleSaveComparison = async () => {
+  if (!user) {
+    setSaveStatus('error');
+    setSaveMessage('⚠️ Please login to save comparisons');
+    setTimeout(() => {
+      setSaveStatus('idle');
+      setSaveMessage('');
+      navigate('/auth');
+    }, 2000);
+    return;
+  }
+
+  // Get the actual MongoDB _id from the product objects
+  const prod1Id = product1?._id || product1?.id;
+  const prod2Id = product2?._id || product2?.id;
+
+  if (!prod1Id || !prod2Id) {
+    setSaveStatus('error');
+    setSaveMessage('❌ Cannot save: Product IDs missing');
+    setTimeout(() => {
+      setSaveStatus('idle');
+      setSaveMessage('');
+    }, 3000);
+    return;
+  }
+
+  setSaveStatus('saving');
+  setSaveMessage('💾 Saving comparison...');
+
+  try {
+    const res = await fetch("http://localhost:5000/api/comparisons", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        userId: user._id || user.id,
+        product1Id: prod1Id,
+        product2Id: prod2Id,
+        category: category || product1.category
+      })
+    });
+
+    const data = await res.json();
+
+    if (res.ok) {
+      setSaveStatus('success');
+      setSaveMessage('✅ Comparison saved successfully!');
       setTimeout(() => {
         setSaveStatus('idle');
         setSaveMessage('');
       }, 3000);
-      return;
-    }
-
-    setSaveStatus('saving');
-    setSaveMessage('💾 Saving comparison...');
-
-    try {
-      const res = await fetch("http://localhost:5000/api/comparisons", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          userId: user._id || user.id,
-          product1: product1._id,
-          product2: product2._id,
-          category: category || product1.category
-        })
-      });
-
-      const data = await res.json();
-
-      if (res.ok) {
-        setSaveStatus('success');
-        setSaveMessage('✅ Comparison saved successfully!');
-        setTimeout(() => {
-          setSaveStatus('idle');
-          setSaveMessage('');
-        }, 3000);
-      } else {
-        setSaveStatus('error');
-        setSaveMessage(data.message || '❌ Save failed');
-        setTimeout(() => {
-          setSaveStatus('idle');
-          setSaveMessage('');
-        }, 3000);
-      }
-    } catch (err) {
-      console.error("Save error:", err);
+    } else {
       setSaveStatus('error');
-      setSaveMessage('❌ Network error. Please try again.');
+      setSaveMessage(data.message || '❌ Save failed');
       setTimeout(() => {
         setSaveStatus('idle');
         setSaveMessage('');
       }, 3000);
     }
-  };
+  } catch (err) {
+    console.error("Save error:", err);
+    setSaveStatus('error');
+    setSaveMessage('❌ Network error. Please try again.');
+    setTimeout(() => {
+      setSaveStatus('idle');
+      setSaveMessage('');
+    }, 3000);
+  }
+};
 
   if (loading) {
     return (

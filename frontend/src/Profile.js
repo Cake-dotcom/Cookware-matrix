@@ -4,6 +4,16 @@ import { User, LogOut, ArrowLeft, Mail, Calendar, Activity, ShoppingBag, Setting
 import logo from "./Assets/logo.png";
 import { formatPrice, getImage } from "./utils/formatters";
 
+const formatJoinDate = (dateString) => {
+  if (!dateString) return "Recently";
+  
+  const date = new Date(dateString);
+  const month = date.toLocaleDateString('en-US', { month: 'short' });
+  const year = date.getFullYear();
+  
+  return `${month} ${year}`;
+};
+
 export default function Profile() {
   const navigate = useNavigate();
   const [user, setUser] = useState(null);
@@ -170,7 +180,7 @@ export default function Profile() {
                 </div>
                 <div className="flex items-center gap-2">
                   <Calendar className="w-4 h-4" />
-                  <span className="text-sm">Joined Dec 2024</span>
+                   <span className="text-sm">Joined {formatJoinDate(user.createdAt)}</span>
                 </div>
               </div>
             </div>
@@ -265,7 +275,7 @@ export default function Profile() {
                 <div className="space-y-4">
                   <div className="p-4 bg-gradient-to-r from-amber-500/20 to-orange-500/20 border-2 border-amber-500/30 rounded-xl">
                     <div className="flex items-center justify-between mb-2">
-                      <span className="text-orange-200">Total Comparisons</span>
+                      <span className="text-orange-200">Total Saved Comparisons</span>
                       <span className="text-2xl font-bold text-amber-400">{savedComparisons.length}</span>
                     </div>
                     <div className="w-full bg-orange-950/50 rounded-full h-2">
@@ -286,7 +296,7 @@ export default function Profile() {
                   <div className="p-4 bg-gradient-to-r from-red-500/20 to-amber-500/20 border-2 border-red-500/30 rounded-xl">
                     <div className="flex items-center justify-between mb-2">
                       <span className="text-orange-200">Member Since</span>
-                      <span className="text-lg font-bold text-red-400">Dec 2024</span>
+                      <span className="text-lg font-bold text-red-400">{formatJoinDate(user.createdAt)}</span>
                     </div>
                   </div>
                 </div>
